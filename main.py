@@ -1,5 +1,6 @@
 import base64
 
+from datetime import datetime, timedelta
 from io import BytesIO
 
 import aiohttp
@@ -11,6 +12,7 @@ from fastapi.responses import JSONResponse
 from PIL import Image
 from pydantic import BaseModel, Required
 
+# Ticket contract endpoint
 CONTRACT_URL = "https://api.kkm.krakow.pl/api/v1/mkkm/tickets/{ticket_guid}/contract"
 
 
@@ -23,6 +25,7 @@ class HTTPException(Exception):
 
 class ContractResponse(BaseModel):
     aztec: str
+    expires: datetime
 
 
 class ErrorResponse(BaseModel):
@@ -41,7 +44,7 @@ app = FastAPI(
 
 @app.exception_handler(HTTPException)
 async def http_exception_handler(request: Request, exception: HTTPException):
-    """Return exception as JSON response"""
+    """Returns exception as JSON response"""
     return JSONResponse(
         status_code=exception.status_code,
         content={"message": exception.message},
@@ -54,7 +57,7 @@ async def http_exception_handler(request: Request, exception: HTTPException):
     500: {"model": ErrorResponse}
 })
 async def get_contract(ticket_guid: str, authorization: str = Header(Required)):
-    """Return decoded AZTEC barcode data"""
+    """Returns decoded AZTEC barcode data"""
     auth_headers = {
         "User-Agent": "mobileKKM/contract_proxy",
         "Authorization": authorization
@@ -73,4 +76,5 @@ async def get_contract(ticket_guid: str, authorization: str = Header(Required)):
             except ValueError as exc:
                 raise HTTPException(status_code=500, message="Could not decode barcode from image.") from exc
 
-            return {"aztec": result.text}
+            expires = datetime.utcnow().replace(second=0, microsecond=0) + timedelta(minutes=2)
+            return {"aztec": result.text, "expires": expires}
