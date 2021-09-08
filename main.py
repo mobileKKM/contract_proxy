@@ -1,4 +1,5 @@
 import base64
+import time
 
 from datetime import datetime, timedelta
 from io import BytesIO
@@ -40,6 +41,15 @@ app = FastAPI(
     docs_url="/docs/",
     redoc_url=None
 )
+
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
 
 
 @app.exception_handler(HTTPException)
