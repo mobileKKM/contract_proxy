@@ -31,7 +31,6 @@ class HTTPException(Exception):
 
 class ContractResponse(BaseModel):
     aztec: str
-    expires: datetime
 
 
 class ErrorResponse(BaseModel):
@@ -104,4 +103,4 @@ async def get_contract(ticket_guid: str, authorization: str = Header(Required)):
             expires = datetime.utcnow().replace(second=0, microsecond=0) + timedelta(minutes=2)
 
             await redis.set(f"ticket:{ticket_guid}:contract", result.text, ex=(expires - datetime.utcnow()).seconds)
-            return {"aztec": result.text, "expires": expires}
+            return {"aztec": result.text}
