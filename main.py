@@ -72,7 +72,7 @@ async def http_exception_handler(request: Request, exception: HTTPException):
     )
 
 
-@app.get("/ticket/{ticket_guid}", response_model=ContractResponse, responses={
+@app.get("/ticket/{ticket_guid}/contract", response_model=ContractResponse, responses={
     400: {"model": ErrorResponse},
     403: {"model": ErrorResponse},
     500: {"model": ErrorResponse}
