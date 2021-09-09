@@ -1,5 +1,7 @@
 aiohttp
+aioredis
 fastapi
 pillow
+pydantic
 uvicorn
 zxing-cpp
