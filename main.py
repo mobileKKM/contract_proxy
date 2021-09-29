@@ -46,7 +46,7 @@ app = FastAPI(
     debug=False,
     title="Ticket Contract Proxy",
     description="A microservice to decode AZTEC codes from mKKM to save bandwidth.",
-    version="1.0",
+    version="1.1",
     docs_url="/docs/",
     redoc_url=None
 )
