@@ -33,6 +33,11 @@ class ContractResponse(BaseModel):
     aztec: str
 
 
+class HealthcheckResponse(BaseModel):
+    success: bool
+    message: str
+
+
 class ErrorResponse(BaseModel):
     message: str
 
@@ -104,3 +109,9 @@ async def get_contract(ticket_guid: str, authorization: str = Header(Required)):
 
             await redis.set(f"ticket:{ticket_guid}:contract", result.text, ex=(expires - datetime.utcnow()).seconds)
             return {"aztec": result.text}
+
+
+@app.get("/healthcheck", response_model=HealthcheckResponse)
+async def healthcheck():
+    """Returns true if the proxy is alive"""
+    return {"success": True, "message": "healthy"}
