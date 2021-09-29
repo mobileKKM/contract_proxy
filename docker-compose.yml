@@ -1,0 +1,40 @@
+version: "3.3"
+
+services:
+  app:
+    build: https://github.com/mobileKKM/contract_proxy.git
+    command: ["--host", "0.0.0.0", "--port", "8080", "--proxy-headers"]
+    restart: always
+    depends_on:
+      - redis
+    environment:
+      WEB_CONCURRENCY: 4
+      FORWARDED_ALLOW_IPS: "172.30.1.1"
+      REDIS_URL: "redis://:${REDIS_PASSWORD}@redis:6379/"
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+    networks:
+      default:
+        ipv4_address: 172.30.1.2
+        aliases:
+          - app
+  redis:
+    build: redis/
+    restart: always
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD}
+    networks:
+      default:
+        ipv4_address: 172.30.1.3
+        aliases:
+          - redis
+
+networks:
+  default:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.30.1.0/24
