@@ -10,7 +10,7 @@ import aioredis
 import zxingcpp
 
 from fastapi import FastAPI, Header, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 
 from PIL import Image
 from pydantic import BaseModel, Required
@@ -46,7 +46,7 @@ app = FastAPI(
     debug=False,
     title="Ticket Contract Proxy",
     description="A microservice to decode AZTEC codes from mKKM to save bandwidth.",
-    version="1.1",
+    version="1.2",
     docs_url="/docs/",
     redoc_url=None
 )
@@ -75,6 +75,11 @@ async def http_exception_handler(request: Request, exception: HTTPException):
         status_code=exception.status_code,
         content={"message": exception.message},
     )
+
+
+@app.get("/", include_in_schema=False)
+async def index():
+    return RedirectResponse(url="https://mobilekkm.codebucket.de", status_code=301)
 
 
 @app.get("/ticket/{ticket_guid}/contract", response_model=ContractResponse, responses={
