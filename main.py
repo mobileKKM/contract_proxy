@@ -1,4 +1,5 @@
 import base64
+import json
 import os
 import time
 
@@ -31,6 +32,7 @@ class HTTPException(Exception):
 
 class ContractResponse(BaseModel):
     aztec: str
+    valid_from: datetime
 
 
 class ErrorResponse(BaseModel):
@@ -41,7 +43,7 @@ app = FastAPI(
     debug=False,
     title="Ticket Contract Proxy",
     description="A microservice to decode AZTEC codes from mKKM to save bandwidth.",
-    version="1.2",
+    version="1.3",
     docs_url="/docs/",
     redoc_url=None
 )
@@ -74,7 +76,10 @@ async def http_exception_handler(request: Request, exception: HTTPException):
 
 @app.get("/", include_in_schema=False)
 async def index():
-    return RedirectResponse(url="https://mobilekkm.codebucket.de", status_code=301)
+    return RedirectResponse(
+        status_code=301,
+        url="https://mobilekkm.codebucket.de"
+    )
 
 
 @app.get("/ticket/{ticket_guid}/contract", response_model=ContractResponse, responses={
@@ -85,7 +90,7 @@ async def index():
 async def get_contract(ticket_guid: str, authorization: str = Header(Required)):
     """Returns decoded AZTEC barcode data"""
     if await redis.exists(f"ticket:{ticket_guid}:contract"):
-        return {"aztec": await redis.get(f"ticket:{ticket_guid}:contract")}
+        return json.loads(await redis.get(f"ticket:{ticket_guid}:contract"))
 
     auth_headers = {
         "User-Agent": "mobileKKM/contract_proxy",
@@ -105,10 +110,16 @@ async def get_contract(ticket_guid: str, authorization: str = Header(Required)):
             except ValueError as exc:
                 raise HTTPException(status_code=500, message="Could not decode barcode from image.") from exc
 
-            expires = datetime.utcnow().replace(second=0, microsecond=0) + timedelta(minutes=2)
+            valid_from = datetime.utcnow().replace(second=0, microsecond=0)
+            expires = (valid_from + timedelta(minutes=2)) - datetime.utcnow()
 
-            await redis.set(f"ticket:{ticket_guid}:contract", result.text, ex=(expires - datetime.utcnow()).seconds)
-            return {"aztec": result.text}
+            contract = {
+                "aztec": result.text,
+                "valid_from": f"{valid_from.isoformat()}Z"
+            }
+
+            await redis.set(f"ticket:{ticket_guid}:contract", json.dumps(contract), ex=expires.seconds)
+            return contract
 
 
 @app.api_route("/healthcheck", methods=["GET", "HEAD"], include_in_schema=False)
