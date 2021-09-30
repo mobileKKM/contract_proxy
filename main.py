@@ -33,11 +33,6 @@ class ContractResponse(BaseModel):
     aztec: str
 
 
-class HealthcheckResponse(BaseModel):
-    success: bool
-    message: str
-
-
 class ErrorResponse(BaseModel):
     message: str
 
@@ -116,7 +111,7 @@ async def get_contract(ticket_guid: str, authorization: str = Header(Required)):
             return {"aztec": result.text}
 
 
-@app.get("/healthcheck", response_model=HealthcheckResponse)
+@app.api_route("/healthcheck", methods=["GET", "HEAD"], include_in_schema=False)
 async def healthcheck():
     """Returns true if the proxy is alive"""
     return {"success": True, "message": "healthy"}
